@@ -15,11 +15,15 @@ class User(db.Model): #Usuario
     tournament = db.relationship('Tournament', backref='user', lazy=True)
     inscription = db.relationship('Inscription', backref='user', lazy=True)
 
-    def __init__(self,username,email,password,date_of_birth):
+    def __init__(self,username,email,password,date_of_birth,country,state,city,description):
         self.username = username
         self.email = email
         self.password = password
         self.date_of_birth = date_of_birth
+        self.country = country
+        self.state = state
+        self.city = city
+        self.description = description
 
     def __repr__(self):
         return '<User username: %r,e-mail: %r,date of birt: %r,country: %r,state: %r,city: %r>' % self.username , self.email, self.date_of_birth, self.country, self.state, self.city
@@ -27,11 +31,11 @@ class User(db.Model): #Usuario
     def serialize(self):
         return {
             "username": self.username,
-            "email": self.email
-            "date of birth": self.date_of_birth
-            "country":self.country
-            "state":self.state
-            "city":self.city
+            "email": self.email,
+            "date_of_birth": self.date_of_birth,
+            "country":self.country,
+            "state":self.state,
+            "city":self.city,
             "description":self.description
         }
 
@@ -54,7 +58,7 @@ class Tournament(db.Model): #Torneo
     organizator_id = db.Column(db.Integer, db.ForeignKey('user.id'),
         nullable=False)
     inscriptions = db.relationship('Inscription', backref='tournament', lazy=True) 
-    matches = db.relationship('Match', backref='tournament', lazy=True)
+    matches = db.relationship('TournamentMatch', backref='tournament', lazy=True)
 
     def __init__(self,game_title,game_plataform,deadline,start_day,
         country,state,city,participants,entrance_fee,prize,kind):
@@ -75,19 +79,19 @@ class Tournament(db.Model): #Torneo
 
     def serialize(self):
         return {
-            "tournament_name" = self.tournament_name
-            "password" = self.password
-            "game_title" = self.game_title
-            "game_plataform" = self.game_plataform
-            "deadline" = self.deadline
-            "start_day" = self.start_day
-            "country" = self.country
-            "state" = self.state
-            "city" = self.city
-            "participants" = self.participants
-            "entrance_fee" = self.entrance_fee
-            "prize" = self.prize
-            "kind" = self.kind
+            "tournament_name" : self.tournament_name,
+            "password" : self.password,
+            "game_title" : self.game_title,
+            "game_plataform" : self.game_plataform,
+            "deadline" : self.deadline,
+            "start_day" : self.start_day,
+            "country" : self.country,
+            "state" : self.state,
+            "city" : self.city,
+            "participants" : self.participants,
+            "entrance_fee" : self.entrance_fee,
+            "prize" : self.prize,
+            "kind" : self.kind
         }
 
 class Inscription(db.Model): #Inscripciones
@@ -96,11 +100,11 @@ class Inscription(db.Model): #Inscripciones
         nullable=False)
     competitor_id = db.Column(db.Integer, db.ForeignKey('user.id'),
         nullable=False)
-    status = db.Column(db.String,nullable=False)
+    status = db.Column(db.String(20),nullable=False)
     date_inscription = db.Column(db.Date,nullable=False)
     
     def __repr__(self):
-        return '<Inscription >' % 
+        return '<Inscription %r>' % self.status
 
     def serialize(self):
         return {
@@ -109,7 +113,7 @@ class Inscription(db.Model): #Inscripciones
             #nombre de torneoa inscribir 
         }
 
-class Match(db.Model): #Encuentros
+class TournamentMatch(db.Model): #Encuentros
     id = db.Column(db.Integer, primary_key=True)
     tournament_id = db.Column(db.Integer, db.ForeignKey('tournament.id'),
         nullable=False)
@@ -124,10 +128,10 @@ class Match(db.Model): #Encuentros
     
 
     def __repr__(self):
-        return '<Match >' % 
+        return '<Match %r>' % self.round
 
     def serialize(self):
         return {
-            
+            "hello" : "chao"
         }
 
