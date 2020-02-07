@@ -8,6 +8,7 @@ from flask_swagger import swagger
 from flask_cors import CORS
 from utils import APIException, generate_sitemap
 from models import db, User, Tournament, TournamentMatch, Inscription
+
 #from models import Person
 
 app = Flask(__name__)
@@ -66,7 +67,7 @@ def handle_register_user(username):
         else:
             print("Creando usuario")
             user_pack = request.json
-            new_user = User(user_pack["username"],user_pack["email"],user_pack["password"],user_pack["date_of_birth"],
+            new_user = User(username,user_pack["email"],user_pack["password"],user_pack["date_of_birth"],
                 user_pack["country"],user_pack["state"],user_pack["city"],user_pack["description"])
             db.session.add(new_user)
             db.session.commit()
@@ -89,10 +90,11 @@ def handle_log_in_user(username):
     }
     #Chequeando si el usuario existe
     user_pack = request.json
-
+    
     if username.find("@") == -1:
        
-        requesting_user = User.query.filter_by(username=username,password=user_pack[password]).all()
+        requesting_user = User.query.filter_by(username=username,password=user_pack["password"]).all()
+        
         if len(requesting_user) > 0:
             username_id = requesting_user[0].id
         else : 
@@ -100,7 +102,7 @@ def handle_log_in_user(username):
 
     else:
            
-        requesting_user = User.query.filter_by(email=username,password=user_pack[password]).all()
+        requesting_user = User.query.filter_by(email=username,password=user_pack["password"]).all()
         if len(requesting_user) > 0:
             username_id = requesting_user[0].id
         else : 
@@ -120,6 +122,52 @@ def handle_log_in_user(username):
         else:
             response_body = {
                 "status": "400_CREDENCIALES_NO_CONCUERDAN"
+            }
+            status_code = 400
+      
+    return make_response(
+        jsonify(response_body),
+        status_code,
+        headers
+    )
+
+@app.route('/user/<user_id>/tournaments/', methods=['GET','POST'])
+@app.route('/user/<user_id>/tournaments/<tournament_id>', methods=['GET','POST','PUT','DELETE'])
+def handle_tournament(user_id,tournament_id = 0):
+
+    headers = {
+        "Content-Type": "application/json"
+    }
+    #Chequeando si el usuario existe
+    tournament_pack = request.json
+    
+    if request.method == 'POST':
+        
+        print("HELLO Tournament POST")
+                
+        if tournament_pack["action"] == "create":
+            print("Creando torneo")
+            new_tournament = Tournament(tournament_pack["tournament_name"],tournament_pack["password"],tournament_pack["game_title"],tournament_pack["game_plataform"],tournament_pack["deadline"], tournament_pack["start_date"], tournament_pack["country"],tournament_pack["state"], tournament_pack["city"],tournament_pack["participants"],tournament_pack["entrance_fee"],tournament_pack["prize"],tournament_pack["kind"],user_id)
+            db.session.add(new_tournament)
+            db.session.commit()
+            response_body = {
+                "status": "OK"
+            }
+            status_code = 200
+        
+        elif tournament_pack["action"] == "take part":
+            print("Inscribiendo en torneo")
+            new_inscription = Inscription(tournament_id,user_id,tournament_pack["status"],tournament_pack["date_inscription"])
+            db.session.add(new_inscription)
+            db.session.commit()
+            response_body = {
+                "status": "OK"
+            }
+            status_code = 200
+        
+        else:
+            response_body = {
+                "status": "400_ACCION_NO_REGISTRADA"
             }
             status_code = 400
       
