@@ -67,7 +67,8 @@ def handle_register_user(username):
         else:
             print("Creando usuario")
             user_pack = request.json
-            new_user = User(username,user_pack["email"],user_pack["password"],user_pack["date_of_birth"],
+            new_user = User(username,user_pack["email"],user_pack["name"],user_pack["last_name"],
+                user_pack["password"],user_pack["date_of_birth"],
                 user_pack["country"],user_pack["state"],user_pack["city"],user_pack["description"])
             db.session.add(new_user)
             db.session.commit()
@@ -157,14 +158,23 @@ def handle_tournament(user_id,tournament_id = 0):
         
         elif tournament_pack["action"] == "take part":
             print("Inscribiendo en torneo")
-            new_inscription = Inscription(tournament_id,user_id,tournament_pack["status"],tournament_pack["date_inscription"])
-            db.session.add(new_inscription)
-            db.session.commit()
-            response_body = {
-                "status": "OK"
-            }
-            status_code = 200
-        
+            inscriptions = Inscription.query.filter_by(tournament_id=tournament_id).all()
+            tournament = Tournament.query.filter_by(id=tournament_id).first()
+            limit_inscriptions = tournament.participants
+            if len(inscriptions) < limit_inscriptions:
+                new_inscription = Inscription(tournament_id,user_id,tournament_pack["status"],tournament_pack["date_inscription"])
+                db.session.add(new_inscription)
+                db.session.commit()
+                response_body = {
+                    "status": "OK"
+                }
+                status_code = 200
+            else:
+                response_body = {
+                    "status": "400_BAD_REQUEST"
+                }
+                status_code = 400
+            
         else:
             response_body = {
                 "status": "400_ACCION_NO_REGISTRADA"
@@ -178,6 +188,33 @@ def handle_tournament(user_id,tournament_id = 0):
     )
 
 
+@app.route('/tournaments/<tournament_id>/match/', methods=['GET','POST','PUT','DELETE'])
+@app.route('/tournaments/<tournament_id>/match/<match_id>', methods=['GET','POST','PUT','DELETE'])
+def handle_tournament(tournament_id,match_id = 0):
+    
+    headers = {
+        "Content-Type": "application/json"
+    }
+
+    if match_id == 0:
+        if request.method == 'POST':
+            tournament = Tournament.query.filter_by(id=tournament_id).first()
+            matches = tournament.create_matches_mode_league()
+            for match in matches:
+                new_match = TournamentMatch(match["tournament_id"],match["competitor_one_id"],match["competitor_two_id"],match["status"],match["round"])
+                db.session.add(new_match)
+            db.session.commit()
+
+            response_body = {
+                    "status": "OK"
+                }
+            status_code = 200
+
+    return make_response(
+        jsonify(response_body),
+        status_code,
+        headers
+    )
 
 # this only runs if `$ python src/main.py` is executed
 if __name__ == '__main__':
