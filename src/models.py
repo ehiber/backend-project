@@ -104,6 +104,59 @@ class Tournament(db.Model): #Torneo
             "kind" : self.kind
         }
 
+    def create_matches_mode_league(self, registered_users):
+
+        #registered_users = inscripciones de los usuarios :> {user_id,tournament_id} 
+
+        number_enrolled = len(registered_users)
+        index_participants = 0
+        odd = True if number_enrolled%2 != 0 else False
+
+        if odd:
+            number_enrolled += 1
+
+        total_one_day_matches = number_enrolled/2 # total de partidos de una jornada
+        inverse_index = number_enrolled-2 #
+        round_match = 1
+
+        for i in range(1,int(number_enrolled*2)-1):
+                        
+            for match_journey in range(0,int(total_one_day_matches)):
+                if index_participants > number_enrolled-2:
+                    index_participants = 0
+
+                if inverse_index < 0:
+                    inverse_index = number_enrolled-2
+
+                if match_journey == 0: # seria el partido inicial de cada fecha
+                    if odd:
+                        new_match = TournamentMatch(registered_users[index_participants].tournament_id,
+                            registered_users[index_participants].competitor_id,None,"sin_jugar",round_match) #PARTIDO QUE NO SE VA A JUGAR EN LA JORNADA
+                    else:
+                        if (i+1)%2 == 0:
+                            new_match = TournamentMatch(registered_users[index_participants].tournament_id,
+                            registered_users[index_participants].competitor_id,registered_users[number_enrolled-1].competitor_id,"sin_jugar",round_match)
+                        else:
+                            new_match = TournamentMatch(registered_users[index_participants].tournament_id,
+                            registered_users[number_enrolled-1].competitor_id,registered_users[index_participants].competitor_id,"sin_jugar",round_match)
+                      
+                else:
+                    new_match = TournamentMatch(registered_users[index_participants].tournament_id,
+                            registered_users[index_participants].competitor_id,registered_users[inverse_index].competitor_id,"sin_jugar",round_match)
+
+                db.session.add(new_match)
+
+            inverse_index -= 1
+            index_participants += 1
+            round_match += 1    
+                
+            
+            
+
+        db.session.commit()
+
+        return True        
+
 class Inscription(db.Model): #Inscripciones
     id = db.Column(db.Integer, primary_key=True)
     tournament_id = db.Column(db.Integer, db.ForeignKey('tournament.id'),
@@ -140,64 +193,22 @@ class TournamentMatch(db.Model): #Encuentros
     match_result_two = db.Column(db.Integer)
     # won_one = db.Column(db.Boolean,nullable=False)
     # won_two = db.Column(db.Boolean,nullable=False)
-    round = db.Column(db.Integer,nullable=False)
+    round_match = db.Column(db.Integer,nullable=False)
     
-    def __init__(self,tournament_id,competitor_one_id,competitor_two_id,status,round):
+    def __init__(self,tournament_id,competitor_one_id,competitor_two_id,status,round_match):
         self.tournament_id = tournament_id
         self.competitor_one_id = competitor_one_id
         self.competitor_two_id = competitor_two_id
         self.status = status
-        self.round = round
+        self.round_match = round_match
 
     def __repr__(self):
-        return '<Match %r>' % self.round
+        return '<Match %r>' % self.round_match
 
     def serialize(self):
         return {
             "hello" : "chao"
         }
 
-    def create_matches_mode_league(self, registered_users):
-        number_enrolled = len(registered_users)
-        index_participants = 0
-        odd = True if number_enrolled%2 != 0 else False
-
-        if odd:
-            number_enrolled += 1
-
-        total_one_day_matches = number_enrolled/2 # total de partidos de una jornada
-        journey = []
-        inverse_index = number_enrolled-2
-
-        for i in range(1,number_enrolled):
-            list_equipos = {}
-            for match_journey in range(0,total_one_day_matches):
-                if index_participants > number_enrolled-2:
-                    index_participants = 0
-
-            if inverse_index < 0:
-                inverse_index = number_enrolled-2
-
-        #   if indiceP == 0: # seria el partido inicial de cada fecha
-        #      if impar:
-        #         equipos.append(clubes[index_clubes])
-        #      else:
-        #         if (i+1)%2 == 0:
-        #            partido = [clubes[index_clubes], clubes[auxT-1]]
-        #         else:
-        #            partido = [clubes[auxT-1], clubes[index_clubes]]
-        #         equipos.append(" vs ".join(partido))
-        #     else:
-        #     partido = [clubes[index_clubes], clubes[indiceInverso]]
-        #     equipos.append(" vs ".join(partido))
-        #     indiceInverso -= 1
-        #     index_clubes += 1
-
-        #     list_equipos = {
-        #         'jornada': "Jornada Nro.: " + str(i),
-        #         'equipos': equipos
-        #     }
-        #     jornada.append(list_equipos)
-
-        #     print(jornada)
+    
 

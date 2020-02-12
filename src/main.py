@@ -46,9 +46,9 @@ def handle_register_user(username):
     }
     #Chequeando si el usuario 
     print(username)
-    requesting_user = User.query.filter_by(username=username).all()
-    if len(requesting_user) > 0:
-        username_id = requesting_user[0].id
+    requesting_user = User.query.filter_by(username=username).first()
+    if requesting_user:
+        username_id = requesting_user.id
     else : 
         username_id = None 
 
@@ -94,18 +94,18 @@ def handle_log_in_user(username):
     
     if username.find("@") == -1:
        
-        requesting_user = User.query.filter_by(username=username,password=user_pack["password"]).all()
+        requesting_user = User.query.filter_by(username=username,password=user_pack["password"]).first()
         
-        if len(requesting_user) > 0:
-            username_id = requesting_user[0].id
+        if requesting_user:
+            username_id = requesting_user.id
         else : 
             username_id = None 
 
     else:
            
-        requesting_user = User.query.filter_by(email=username,password=user_pack["password"]).all()
-        if len(requesting_user) > 0:
-            username_id = requesting_user[0].id
+        requesting_user = User.query.filter_by(email=username,password=user_pack["password"]).first()
+        if requesting_user:
+            username_id = requesting_user.id
         else : 
             username_id = None
 
@@ -190,7 +190,7 @@ def handle_tournament(user_id,tournament_id = 0):
 
 @app.route('/tournaments/<tournament_id>/match/', methods=['GET','POST','PUT','DELETE'])
 @app.route('/tournaments/<tournament_id>/match/<match_id>', methods=['GET','POST','PUT','DELETE'])
-def handle_tournament(tournament_id,match_id = 0):
+def handle_match_tournament(tournament_id,match_id = 0):
     
     headers = {
         "Content-Type": "application/json"
@@ -198,17 +198,26 @@ def handle_tournament(tournament_id,match_id = 0):
 
     if match_id == 0:
         if request.method == 'POST':
-            tournament = Tournament.query.filter_by(id=tournament_id).first()
-            matches = tournament.create_matches_mode_league()
-            for match in matches:
-                new_match = TournamentMatch(match["tournament_id"],match["competitor_one_id"],match["competitor_two_id"],match["status"],match["round"])
-                db.session.add(new_match)
-            db.session.commit()
-
-            response_body = {
-                    "status": "OK"
-                }
-            status_code = 200
+            registered_users = Inscription.query.filter_by(tournament_id=tournament_id).all()
+            requesting_tournament = Tournament.query.filter_by(id=tournament_id).one_or_none()
+            if requesting_tournament:
+                did_create_matches = requesting_tournament.create_matches_mode_league(registered_users)
+            else:
+                response_body = {
+                        "status": "400_BAD_REQUEST"
+                    }
+                status_code = 400
+           
+            if did_create_matches:
+                response_body = {
+                        "status": "OK"
+                    }
+                status_code = 200
+            else:
+                response_body = {
+                        "status": "ALGO HA PASADO"
+                    }
+                status_code = 400
 
     return make_response(
         jsonify(response_body),
