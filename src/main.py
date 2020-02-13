@@ -45,7 +45,7 @@ def handle_register_user(username):
         "Content-Type": "application/json"
     }
     #Chequeando si el usuario 
-    print(username)
+    
     requesting_user = User.query.filter_by(username=username).first()
     if requesting_user:
         username_id = requesting_user.id

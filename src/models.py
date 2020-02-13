@@ -107,19 +107,18 @@ class Tournament(db.Model): #Torneo
     def create_matches_mode_league(self, registered_users):
 
         #registered_users = inscripciones de los usuarios :> {user_id,tournament_id} 
-
-        number_enrolled = len(registered_users)
-        index_participants = 0
-        odd = True if number_enrolled%2 != 0 else False
-
+        
+        number_enrolled = len(registered_users) #numero de inscritos
+        index_participants = 0 #index de control
+        odd = True if number_enrolled%2 != 0 else False #verificando si es impar
+        
         if odd:
             number_enrolled += 1
 
         total_one_day_matches = number_enrolled/2 # total de partidos de una jornada
-        inverse_index = number_enrolled-2 #
-        round_match = 1
-
-        for i in range(1,int(number_enrolled*2)-1):
+        inverse_index = number_enrolled-2 #index control participante 2 
+        
+        for journey in range(1,number_enrolled):
                         
             for match_journey in range(0,int(total_one_day_matches)):
                 if index_participants > number_enrolled-2:
@@ -130,29 +129,29 @@ class Tournament(db.Model): #Torneo
 
                 if match_journey == 0: # seria el partido inicial de cada fecha
                     if odd:
-                        new_match = TournamentMatch(registered_users[index_participants].tournament_id,
-                            registered_users[index_participants].competitor_id,None,"sin_jugar",round_match) #PARTIDO QUE NO SE VA A JUGAR EN LA JORNADA
+                        new_match = TournamentMatch(self.id,registered_users[index_participants].competitor_id,None,"sin_jugar",journey) #PARTIDO QUE NO SE VA A JUGAR EN LA JORNADA
                     else:
-                        if (i+1)%2 == 0:
-                            new_match = TournamentMatch(registered_users[index_participants].tournament_id,
-                            registered_users[index_participants].competitor_id,registered_users[number_enrolled-1].competitor_id,"sin_jugar",round_match)
+                        if (journey+1)%2 == 0:
+                            new_match = TournamentMatch(self.id,registered_users[index_participants].competitor_id,registered_users[number_enrolled-1].competitor_id,"sin_jugar",journey)
                         else:
-                            new_match = TournamentMatch(registered_users[index_participants].tournament_id,
-                            registered_users[number_enrolled-1].competitor_id,registered_users[index_participants].competitor_id,"sin_jugar",round_match)
-                      
+                            new_match = TournamentMatch(self.id,registered_users[number_enrolled-1].competitor_id,registered_users[index_participants].competitor_id,"sin_jugar",journey)
+                    
                 else:
-                    new_match = TournamentMatch(registered_users[index_participants].tournament_id,
-                            registered_users[index_participants].competitor_id,registered_users[inverse_index].competitor_id,"sin_jugar",round_match)
-
-                db.session.add(new_match)
-
-            inverse_index -= 1
-            index_participants += 1
-            round_match += 1    
+                    new_match = TournamentMatch(self.id,registered_users[index_participants].competitor_id,registered_users[inverse_index].competitor_id,"sin_jugar",journey)
+                    inverse_index -= 1
                 
-            
-            
-
+                
+                index_participants += 1 
+                db.session.add(new_match)
+        
+        db.session.commit()
+        
+        first_round_matches_tournament = TournamentMatch.query.filter_by(tournament_id=self.id).all() #PARTIDOS DE LA PRIMERA VUELTA
+        
+        for first_round_match in first_round_matches_tournament:
+            new_match = TournamentMatch(self.id,first_round_match.competitor_two_id,first_round_match.competitor_one_id,"sin_jugar",first_round_match.round_match + number_enrolled - 1)
+            db.session.add(new_match)
+        
         db.session.commit()
 
         return True        
