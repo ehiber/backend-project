@@ -64,6 +64,7 @@ class Tournament(db.Model): #Torneo
     kind = db.Column(db.String(120),nullable=False)
     organizator_id = db.Column(db.Integer, db.ForeignKey('user.id'),
         nullable=False)
+    matches_created = db.Column(db.Boolean,default=False,nullable=False)
     inscriptions = db.relationship('Inscription', backref='tournament', lazy=True) 
     matches = db.relationship('TournamentMatch', backref='tournament', lazy=True)
 
@@ -85,7 +86,7 @@ class Tournament(db.Model): #Torneo
         self.organizator_id = organizator_id
 
     def __repr__(self):
-        return f"Tournament tournament_name: {self.tournament_name},game_title: {self.game_title},game_plataform: {self.game_plataform},deadline: {self.deadline},start_date: {self.start_date},country: {self.country},state: {self.state},city: {self.city},participants: {self.participants},entrance fee: {self.entrance_fee},prize: {self.prize},kind: {self.prize}" 
+        return f"Tournament tournament_name: {self.tournament_name},game_title: {self.game_title},game_plataform: {self.game_plataform},deadline: {self.deadline},start_date: {self.start_date},country: {self.country},state: {self.state},city: {self.city},participants: {self.participants},entrance fee: {self.entrance_fee},prize: {self.prize},kind: {self.kind}, matches_created : {self.matches_created} " 
 
     def serialize(self):
         return {
@@ -101,60 +102,72 @@ class Tournament(db.Model): #Torneo
             "participants" : self.participants,
             "entrance_fee" : self.entrance_fee,
             "prize" : self.prize,
-            "kind" : self.kind
+            "kind" : self.kind,
+            "matches_created" : self.matches_created
         }
 
     def create_matches_mode_league(self, registered_users):
 
         #registered_users = inscripciones de los usuarios :> {user_id,tournament_id} 
         
-        number_enrolled = len(registered_users) #numero de inscritos
-        index_participants = 0 #index de control
-        odd = True if number_enrolled%2 != 0 else False #verificando si es impar
-        
-        if odd:
-            number_enrolled += 1
+        # matches_tournament_are_created = TournamentMatch.query.filter_by(tournament_id=self.id).all() #Verificando si ya existen los partidos
 
-        total_one_day_matches = number_enrolled/2 # total de partidos de una jornada
-        inverse_index = number_enrolled-2 #index control participante 2 
-        
-        for journey in range(1,number_enrolled):
-                        
-            for match_journey in range(0,int(total_one_day_matches)):
-                if index_participants > number_enrolled-2:
-                    index_participants = 0
+        if self.matches_created == False:    
+            number_enrolled = len(registered_users) #numero de inscritos
+            index_participants = 0 #index de control
+            odd = True if number_enrolled%2 != 0 else False #verificando si es impar
+            
+            if odd:
+                number_enrolled += 1
 
-                if inverse_index < 0:
-                    inverse_index = number_enrolled-2
+            total_one_day_matches = number_enrolled/2 # total de partidos de una jornada
+            inverse_index = number_enrolled-2 #index control participante 2 
+            
+            for journey in range(1,number_enrolled):
+                            
+                for match_journey in range(0,int(total_one_day_matches)):
+                    if index_participants > number_enrolled-2:
+                        index_participants = 0
 
-                if match_journey == 0: # seria el partido inicial de cada fecha
-                    if odd:
-                        new_match = TournamentMatch(self.id,registered_users[index_participants].competitor_id,None,"sin_jugar",journey) #PARTIDO QUE NO SE VA A JUGAR EN LA JORNADA
-                    else:
-                        if (journey+1)%2 == 0:
-                            new_match = TournamentMatch(self.id,registered_users[index_participants].competitor_id,registered_users[number_enrolled-1].competitor_id,"sin_jugar",journey)
+                    if inverse_index < 0:
+                        inverse_index = number_enrolled-2
+
+                    if match_journey == 0: # seria el partido inicial de cada fecha
+                        if odd:
+                            new_match = TournamentMatch(self.id,registered_users[index_participants].competitor_id,None,"sin_jugar",journey) #PARTIDO QUE NO SE VA A JUGAR EN LA JORNADA
                         else:
-                            new_match = TournamentMatch(self.id,registered_users[number_enrolled-1].competitor_id,registered_users[index_participants].competitor_id,"sin_jugar",journey)
+                            if (journey+1)%2 == 0:
+                                new_match = TournamentMatch(self.id,registered_users[index_participants].competitor_id,registered_users[number_enrolled-1].competitor_id,"sin_jugar",journey)
+                            else:
+                                new_match = TournamentMatch(self.id,registered_users[number_enrolled-1].competitor_id,registered_users[index_participants].competitor_id,"sin_jugar",journey)
+                        
+                    else:
+                        new_match = TournamentMatch(self.id,registered_users[index_participants].competitor_id,registered_users[inverse_index].competitor_id,"sin_jugar",journey)
+                        inverse_index -= 1
                     
-                else:
-                    new_match = TournamentMatch(self.id,registered_users[index_participants].competitor_id,registered_users[inverse_index].competitor_id,"sin_jugar",journey)
-                    inverse_index -= 1
-                
-                
-                index_participants += 1 
-                db.session.add(new_match)
+                    
+                    index_participants += 1 
+                    db.session.add(new_match)
+            
+            db.session.commit()
+            
+            if self.kind == "league-round_trip":
+                first_round_matches_tournament = TournamentMatch.query.filter_by(tournament_id=self.id).all() #PARTIDOS DE LA PRIMERA VUELTA
+            
+                for first_round_match in first_round_matches_tournament:
+                    new_match = TournamentMatch(self.id,first_round_match.competitor_two_id,first_round_match.competitor_one_id,"sin_jugar",first_round_match.round_match + number_enrolled - 1)
+                    db.session.add(new_match)
+            
+                db.session.commit()
+            
+            self.matches_created = True
+            db.session.commit()
         
-        db.session.commit()
-        
-        first_round_matches_tournament = TournamentMatch.query.filter_by(tournament_id=self.id).all() #PARTIDOS DE LA PRIMERA VUELTA
-        
-        for first_round_match in first_round_matches_tournament:
-            new_match = TournamentMatch(self.id,first_round_match.competitor_two_id,first_round_match.competitor_one_id,"sin_jugar",first_round_match.round_match + number_enrolled - 1)
-            db.session.add(new_match)
-        
-        db.session.commit()
+            return True
+            
+        else :    
 
-        return True        
+            return False        
 
 class Inscription(db.Model): #Inscripciones
     id = db.Column(db.Integer, primary_key=True)

@@ -201,24 +201,26 @@ def handle_match_tournament(tournament_id,match_id = 0):
             registered_users = Inscription.query.filter_by(tournament_id=tournament_id).all()
             requesting_tournament = Tournament.query.filter_by(id=tournament_id).one_or_none()
             if requesting_tournament:
+                
                 did_create_matches = requesting_tournament.create_matches_mode_league(registered_users)
+                
+                if did_create_matches:
+                    response_body = {
+                            "status": "OK"
+                        }
+                    status_code = 200
+                else:
+                    response_body = {
+                            "status": "400_BAD_REQUEST_LOS PARTIDOS YA ESTAN CREADOS"
+                        }
+                    status_code = 400
+            
             else:
                 response_body = {
                         "status": "400_BAD_REQUEST"
                     }
                 status_code = 400
-           
-            if did_create_matches:
-                response_body = {
-                        "status": "OK"
-                    }
-                status_code = 200
-            else:
-                response_body = {
-                        "status": "ALGO HA PASADO"
-                    }
-                status_code = 400
-
+    
     return make_response(
         jsonify(response_body),
         status_code,
