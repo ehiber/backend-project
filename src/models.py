@@ -226,7 +226,14 @@ class TournamentMatch(db.Model): #Encuentros
 
     def serialize(self):
         return {
-            "hello" : "chao"
+            "id" : self.id,
+            "tournament_id" : self.tournament_id,
+            "competitor_one_id" : self.competitor_one_id,
+            "competitor_two_id" : self.competitor_two_id,
+            "status" : self.status,
+            "match_result_one" : self.match_result_one,
+            "match_result_two" : self.match_result_two,
+            "round_match" : self.round_match
         }
 
     

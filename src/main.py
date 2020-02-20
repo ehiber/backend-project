@@ -216,6 +216,38 @@ def handle_match_tournament(tournament_id,match_id = 0):
     }
 
     if match_id == 0:
+        if request.method == 'GET':
+            requesting_tournament = Tournament.query.filter_by(id=tournament_id).one_or_none()
+            if requesting_tournament:
+
+                requesting_matches = TournamentMatch.query.filter_by(tournament_id=tournament_id).all()
+                
+                if requesting_matches:
+                    all_matches_serialize = []
+                    
+                    for match in requesting_matches:
+                        all_matches_serialize.append(match.serialize())
+                    
+                    all_matches_serialize_json = json.dumps(all_matches_serialize)
+
+                    response_body = {
+                        "status": "OK",
+                        "matches": all_matches_serialize_json
+                    }
+                    status_code = 200
+
+                else:       
+                    response_body = {
+                            "status": "400_BAD_REQUEST_PARTIDOS NO EXISTEN"
+                        }
+                    status_code = 400
+            
+            else:       
+                response_body = {
+                        "status": "400_BAD_REQUEST_TORNEO NO EXISTE"
+                    }
+                status_code = 400
+        
         if request.method == 'POST':
             registered_users = Inscription.query.filter_by(tournament_id=tournament_id).all()
             requesting_tournament = Tournament.query.filter_by(id=tournament_id).one_or_none()
