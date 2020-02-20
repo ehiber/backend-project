@@ -2,6 +2,7 @@
 This module takes care of starting the API Server, Loading the DB and Adding the endpoints
 """
 import os
+import json
 from flask import Flask, request, jsonify, url_for, make_response
 from flask_migrate import Migrate
 from flask_swagger import swagger
@@ -114,9 +115,13 @@ def handle_log_in_user(username):
         print("HELLO Logeando Usuario POST")
                 
         if username_id:
-                        
+
+            user = User.get_by_id(username_id)
+            user_diccionary = json.dumps(user.serialize())
+            
             response_body = {
-                "status": "OK"
+                "status": "OK",
+                "user": user_diccionary
             }
             status_code = 200
         
@@ -140,12 +145,26 @@ def handle_tournament(user_id,tournament_id = 0):
         "Content-Type": "application/json"
     }
     #Chequeando si el usuario existe
-    tournament_pack = request.json
+    
+    if request.method == 'GET':
+        
+        print("HELLO Tournament GET")
+        all_tournament = Tournament.query.all()
+        all_tournament_serialize = []
+        for tournament in all_tournament:
+            all_tournament_serialize.append(tournament.serialize())
+        all_tournament_serialize_json = json.dumps(all_tournament_serialize)
+
+        response_body = {
+                "status": "OK",
+                "tournaments": all_tournament_serialize_json
+            }
+        status_code = 200
     
     if request.method == 'POST':
-        
+
         print("HELLO Tournament POST")
-                
+        tournament_pack = request.json        
         if tournament_pack["action"] == "create":
             print("Creando torneo")
             new_tournament = Tournament(tournament_pack["tournament_name"],tournament_pack["password"],tournament_pack["game_title"],tournament_pack["game_plataform"],tournament_pack["deadline"], tournament_pack["start_date"], tournament_pack["country"],tournament_pack["state"], tournament_pack["city"],tournament_pack["participants"],tournament_pack["entrance_fee"],tournament_pack["prize"],tournament_pack["kind"],user_id)

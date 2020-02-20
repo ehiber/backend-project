@@ -1,4 +1,5 @@
 from flask_sqlalchemy import SQLAlchemy
+from datetime import date
 
 db = SQLAlchemy()
 
@@ -35,16 +36,21 @@ class User(db.Model): #Usuario
 
     def serialize(self):
         return {
+            "id":self.id,
             "username": self.username,
             "email": self.email,
             "name" : self.name,
             "last_name" : self.last_name,
-            "date_of_birth": self.date_of_birth,
+            "date_of_birth": self.date_of_birth.isoformat(),
             "country":self.country,
             "state":self.state,
             "city":self.city,
             "description":self.description
         }
+    
+    @staticmethod
+    def get_by_id(id):
+        return User.query.get(id)
 
 
 class Tournament(db.Model): #Torneo
@@ -90,12 +96,13 @@ class Tournament(db.Model): #Torneo
 
     def serialize(self):
         return {
+            "id":self.id,
             "tournament_name" : self.tournament_name,
             "password" : self.password,
             "game_title" : self.game_title,
             "game_plataform" : self.game_plataform,
-            "deadline" : self.deadline,
-            "start_date" : self.start_date,
+            "deadline" : self.deadline.isoformat(),
+            "start_date" : self.start_date.isoformat(),
             "country" : self.country,
             "state" : self.state,
             "city" : self.city,
